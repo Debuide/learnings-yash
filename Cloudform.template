@@ -1,0 +1,23 @@
+AWSTemplateFormatVersion: 2010-09-09
+
+Resources:
+  WebAppInstance:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: ami-01216e7612243e0ef 
+      InstanceType: t2.micro
+      KeyName: yash
+      SecurityGroupIds:
+        - !Ref WebAppSecurityGroup
+
+  WebAppSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: yash 
+      GroupDescription: "Allow inbound traffic on Port 9986 with IP 192.168.7.2"
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 9986
+          ToPort: 9986
+          CidrIp: 192.168.7.2/32
+        

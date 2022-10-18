@@ -1,0 +1,162 @@
+   
+    Resources:
+      ## VPC
+      PubPrivateVPC:
+        Type: AWS::EC2::VPC
+        Properties:
+          CidrBlock: 10.0.0.0/16
+          EnableDnsSupport: true
+          EnableDnsHostnames: true
+          Tags: 
+              -
+                Key: "Name"
+                Value: "PubPrivateVPC"
+
+      ## SUBNETS     
+      PublicSubnet:
+        Type: AWS::EC2::Subnet
+        Properties:
+          VpcId: !Ref PubPrivateVPC
+          AvailabilityZone: ap-south-1a
+          CidrBlock: 10.0.1.0/24
+          MapPublicIpOnLaunch: true
+          Tags: 
+              -
+                Key: "Name"
+                Value: "PublicSubnet"
+
+     
+      
+      PrivateSubnet:
+        Type: AWS::EC2::Subnet
+        Properties:
+          VpcId: !Ref PubPrivateVPC
+          AvailabilityZone: ap-south-1b
+          CidrBlock: 10.0.3.0/24
+          MapPublicIpOnLaunch: false
+          Tags: 
+              -
+                Key: "Name"
+                Value: "PrivateSubnet"
+
+     
+      WebAppSecurityGroup:
+         Type: AWS::EC2::SecurityGroup
+         Properties:
+          GroupName: "yash"
+          GroupDescription: "Allow inbound traffic on Port 9986 with IP 192.168.7.2"
+          VpcId: !Ref PubPrivateVPC
+          SecurityGroupIngress:
+          - IpProtocol: tcp
+            FromPort: '9986'
+            ToPort: '9986'
+            CidrIp:  0.0.0.0/0
+          - IpProtocol: icmp
+            FromPort: '-1'
+            ToPort: '-1'
+            CidrIp:  0.0.0.0/0  
+          - IpProtocol: tcp
+            FromPort: '22'
+            ToPort: '22'
+            CidrIp: 0.0.0.0/0  
+          SecurityGroupEgress:
+          - IpProtocol: -1
+            CidrIp: 0.0.0.0/0
+          Tags:
+              -
+                Key: "Name"
+                Value: "WebAppSecurityGroup"
+
+      myInternetGateway:
+         Type: AWS::EC2::InternetGateway
+         Properties:
+          Tags:
+              - 
+               Key: "Name"
+               Value: myInternetGateway   
+      VPCGatewayAttachment:
+         Type: "AWS::EC2::VPCGatewayAttachment"
+         Properties:
+           VpcId: !Ref PubPrivateVPC
+           InternetGatewayId: !Ref myInternetGateway
+
+      PublicRouteTable:
+        Type: AWS::EC2::RouteTable
+        Properties:
+          VpcId: !Ref PubPrivateVPC
+
+      PublicRoute:
+        Type: AWS::EC2::Route
+        DependsOn: VPCGatewayAttachment
+        Properties:
+          RouteTableId: !Ref PublicRouteTable
+          DestinationCidrBlock: 0.0.0.0/0
+          GatewayId: !Ref myInternetGateway
+
+      mySubnetRouteTableAssociation:
+        Type: AWS::EC2::SubnetRouteTableAssociation
+        Properties:
+          SubnetId: !Ref PublicSubnet
+          RouteTableId: !Ref PublicRouteTable
+
+      WebServer:
+        Type: AWS::EC2::Instance
+        Properties:
+          ImageId: ami-08df646e18b182346
+          InstanceType: t2.micro
+          SubnetId: !Ref PublicSubnet
+          KeyName: yash
+          SecurityGroupIds: 
+            - !Ref WebAppSecurityGroup  
+          Tags:
+            -
+              Key: "Name"
+              Value: "Webserver" 
+
+      DataServer:
+        Type: AWS::EC2::Instance
+        Properties:
+          ImageId: ami-08df646e18b182346
+          InstanceType: t2.micro
+          SubnetId: !Ref PrivateSubnet
+          KeyName: yash
+          SecurityGroupIds: 
+            - !Ref WebAppSecurityGroup  
+          Tags:
+            -
+              Key: "Name"
+              Value: "Dataserver" 
+
+      myNATGateway:
+        Type: AWS::EC2::NatGateway
+        Properties:
+          AllocationId: !GetAtt NATGatewayEIP.AllocationId
+          SubnetId: !Ref PublicSubnet
+          Tags:
+             -
+               Key: "Name"
+               Value: "myNATGateway"        
+
+      NATGatewayEIP:
+        Type: AWS::EC2::EIP
+        Properties:
+          Domain: vpc
+
+
+      PrivateRouteTable:
+        Type: AWS::EC2::RouteTable
+        Properties:
+          VpcId: !Ref PubPrivateVPC
+
+      PrivateRoute:
+        Type: AWS::EC2::Route
+        Properties:
+          RouteTableId: !Ref PrivateRouteTable
+          DestinationCidrBlock: 0.0.0.0/0
+          NatGatewayId: !Ref myNATGateway    
+
+      my2SubnetRouteTableAssociation:
+        Type: AWS::EC2::SubnetRouteTableAssociation
+        Properties:
+          SubnetId: !Ref PrivateSubnet
+          RouteTableId: !Ref PrivateRouteTable    

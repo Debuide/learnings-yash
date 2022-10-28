@@ -1,0 +1,32 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Template to Create an EC2 instance in a VPC
+   
+Parameters:
+  InstanceName:
+    Type: String
+    Default: Bastion-Host
+    Description: Enter instance name. Default is Bastion-Host.
+    
+  KeyName:
+    Description: SSH Keypair to login to the instance
+    Type: AWS::EC2::KeyPair::KeyName
+    Default: yash
+
+
+Resources:
+  DemoInstance:
+    Type: 'AWS::EC2::Instance'
+    Properties: 
+      ImageId: ami-097a2df4ac947655f
+      InstanceType: t2.nano
+      AvailabilityZone: us-east-2a
+      KeyName: !Ref KeyName
+      SecurityGroupIds: 
+        - sg-0d89b26ef6a364375	
+      SubnetId: subnet-0a86abb94637ed91f
+      Tags:
+        -
+          Key: "Name"
+          Value: !Ref InstanceName
+
+  

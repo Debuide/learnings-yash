@@ -1,0 +1,90 @@
+AWSTemplateFormatVersion: 2010-09-09
+Parameters:
+  InstanceName:
+    Type: String
+    Default: WebAppServer
+    Description: Enter instance name. Default is WebAppServer.
+  
+  VPC:
+    Type: String 
+    Default: PubPrivateVPC
+    Description: Enter the VPC name. Default name is PubPrivateVPC
+
+  Subnet:
+    Type: String 
+    Default: PublicSubnet
+    Description: Enter the Subnet name. Default name is PubPrivateVPC
+
+  SecurityGroup:
+    Type: String 
+    Default: WebAppSecurityGroup
+    Description: Enter the Security Group name. Default name is WebAppSecurityGroup
+
+
+
+
+Resources:
+  WebAppServer:
+        Type: AWS::EC2::Instance
+        Properties:
+          ImageId: ami-08df646e18b182346
+          InstanceType: t2.micro
+          SubnetId: !Ref PublicSubnet
+          KeyName: yash
+          SecurityGroupIds: 
+            - !Ref SecurityGroup  
+          Tags:
+            -
+              Key: "Name"
+              Value: !Ref InstanceName
+
+
+  WebAppSecurityGroup:
+         Type: AWS::EC2::SecurityGroup
+         Properties:
+          GroupName: "yash"
+          GroupDescription: "Allow inbound traffic on Port 9986 with IP 192.168.7.2"
+          VpcId: !Ref PubPrivateVPC
+          SecurityGroupIngress:
+          - IpProtocol: tcp
+            FromPort: '9986'
+            ToPort: '9986'
+            CidrIp:  192.168.7.2/32
+          - IpProtocol: icmp
+            FromPort: '-1'
+            ToPort: '-1'
+            CidrIp:  0.0.0.0/0  
+          - IpProtocol: tcp
+            FromPort: '22'
+            ToPort: '22'
+            CidrIp: 0.0.0.0/0  
+          SecurityGroupEgress:
+          - IpProtocol: -1
+            CidrIp: 0.0.0.0/0
+          Tags:
+              -
+                Key: "Name"
+                Value: "WebAppSecurityGroup"
+             
+  PubPrivateVPC:
+        Type: AWS::EC2::VPC
+        Properties:
+          CidrBlock: 10.0.0.0/16 
+          EnableDnsSupport: true
+          EnableDnsHostnames: true
+          Tags: 
+              -
+                Key: "Name"
+                Value: VPC
+
+  PublicSubnet:
+        Type: AWS::EC2::Subnet
+        Properties:
+          VpcId: !Ref VPC
+          AvailabilityZone: ap-south-1a
+          CidrBlock: 10.0.1.0/24
+          MapPublicIpOnLaunch: true
+          Tags: 
+              -
+                Key: "Name"
+                Value: !Ref Subnet               

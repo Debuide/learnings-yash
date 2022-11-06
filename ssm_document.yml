@@ -1,0 +1,45 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Template to Create an EC2 instance in a VPC
+Resources:
+  ssmdocument: 
+    Type: AWS::SSM::Document
+    Properties:
+      Content:
+        schemaVersion: '2.2'
+        description: 'Run a script on Linux instances.'
+        parameters:
+          s3url:
+          type: String
+          description: "Please give the S3 bucket url."
+        mainSteps:
+        - action: aws:runShellScript
+          name: switch_user
+          inputs:
+            timeoutSeconds: '60'
+            runCommand:
+            - "sudo su"
+        - action: aws:runShellScript
+          name: copy_file_from_s3_bucket
+          inputs:
+            timeoutSeconds: '60'
+            runCommand:
+            - "aws s3 cp {{ s3url }}/quant-worker/quantworker-$CIRCLE_SHA1 ./ --recursive"
+        - action: aws:runShellScript
+          name: service_stop
+          inputs:
+            timeoutSeconds: '60'
+            runCommand:
+            - "systemctl --user stop quantworker"
+        - action: aws:runShellScript
+          name: service_stop
+          inputs:
+            timeoutSeconds: '60'
+            runCommand:
+            - "systemctl --user start quantworker"            
+      DocumentFormat: YAML
+      DocumentType: Command
+      Name: 'quant_worker_document'
+     
+
+
+  
